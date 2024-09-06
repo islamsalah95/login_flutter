@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:login/Cache/cache_helper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -8,17 +10,39 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-
-
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscureText = true;
+  String _savedName = '';
+  String _savedPassword = '';
+  String _savedEmail = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedData(); // Load saved data when the widget is initialized
+  }
+
+  // Load data from shared preferences
+  void _loadSavedData() async {
+    String? name = CacheHelper.getData(key: 'name');
+    String? password = CacheHelper.getData(key: 'password');
+    String? email = CacheHelper.getData(key: 'email');
+
+    setState(() {
+      _savedName = name ?? '';
+      _savedPassword = password ?? '';
+      _savedEmail = email ?? '';
+    });
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _passwordController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -48,8 +72,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   TextFormField(
                     style: const TextStyle(color: Colors.black),
                     decoration: const InputDecoration(
-                      labelText: 'UserName',
-                      hintText: 'Enter your UserName',
+                      labelText: 'Name',
+                      hintText: 'Enter your Name',
                       labelStyle: TextStyle(fontWeight: FontWeight.bold),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(20.0)),
@@ -67,10 +91,41 @@ class _HomeScreenState extends State<HomeScreen> {
                     controller: _nameController,
                     validator: (value) {
                       if (value!.isEmpty) {
-                        return "UserName Is Empty";
+                        return "Name Is Empty";
                       } else {
                         return null;
                       }
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    style: const TextStyle(color: Colors.black),
+                    decoration: const InputDecoration(
+                      labelText: 'email',
+                      hintText: 'Enter your email',
+                      labelStyle: TextStyle(fontWeight: FontWeight.bold),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(20.0)),
+                        borderSide: BorderSide(color: Colors.blue),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(20.0)),
+                        borderSide: BorderSide(color: Colors.green),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(20.0)),
+                        borderSide: BorderSide(color: Colors.red),
+                      ),
+                    ),
+                    controller: _emailController,
+                    validator: (value) {
+                      if (value!.isEmpty) {
+                        return "Email Is Empty";
+                      } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
+                          .hasMatch(value)) {
+                        return "Enter a valid email";
+                      }
+                      return null;
                     },
                   ),
                   const SizedBox(height: 20),
@@ -118,25 +173,34 @@ class _HomeScreenState extends State<HomeScreen> {
                   ElevatedButton(
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: Text(_nameController.text),
-                              content: ElevatedButton(
-                                onPressed: () {
-                                  _nameController.clear();
-                                  _passwordController.clear();
-                                  Navigator.of(context).pop();
-                                },
-                                child: const Text("Reset"),
-                              ),
-                            );
-                          },
-                        );
+                        CacheHelper.saveData(
+                            key: "name", value: _nameController.text);
+                        CacheHelper.saveData(
+                            key: "password", value: _passwordController.text);
+                        CacheHelper.saveData(
+                            key: "email", value: _emailController.text);
+                        // Update the UI after saving data
+                        setState(() {
+                          _savedName = _nameController.text;
+                          _savedPassword = _passwordController.text;
+                          _savedEmail = _emailController.text;
+                        });
                       }
                     },
-                    child: const Text('login'),
+                    child: const Text('Save'),
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      CacheHelper.clearData();
+                      // Clear the displayed values
+                      setState(() {
+                        _savedName = '';
+                        _savedPassword = '';
+                        _savedEmail = '';
+                      });
+                    },
+                    child: const Text("Reset"),
                   ),
                   const SizedBox(height: 10),
                   Row(
@@ -162,15 +226,45 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 10),
+                  Card(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Name: $_savedName",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        Text(
+                          "Email: $_savedEmail",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          "Password: $_savedPassword",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
         ),
       ),
-
-
     );
   }
-
 }

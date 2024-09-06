@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:login/Cache/cache_helper.dart';
 import 'package:login/Screens/home.dart';
 
-void main() {
+void main() async{
+ await CacheHelper.initial();
   runApp(const MyApp());
 }
 
